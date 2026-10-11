@@ -3,6 +3,15 @@ import time
 import sys
 from core_ir import BBCNewsIRSystem
 
+# Configure UTF-8 encoding for Windows terminal
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+        sys.stdin.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 def main():
     print("=============================================")
     print("   BBC NEWS IR ENGINE - TERMINAL BACKEND     ")
@@ -35,7 +44,7 @@ def main():
 
     # Interactive CLI Loop
     while True:
-        query = input("\n🔍 Enter search query: ")
+        query = input("\n[Search Query] > ")
         if query.lower() in ['exit', 'quit']:
             print("Exiting system. Goodbye!")
             break
@@ -48,13 +57,13 @@ def main():
         
         # Expand Query
         expanded = system.expand_query(query)
-        print(f"🧠 AI Query Expansion: {expanded}")
+        print(f"[Query Expansion] {expanded}")
         
         # Search
         indices, scores = system.search_hybrid_rrf(query, top_n=3)
         search_time = time.time() - start_search
         
-        print(f"⏱️  Retrieval time: {search_time:.4f} seconds")
+        print(f"[Retrieval Time] {search_time:.4f} seconds")
         print("---------------------------------------------")
         
         for rank, (idx, score) in enumerate(zip(indices, scores), 1):
@@ -63,7 +72,7 @@ def main():
             snippet = system.query_focused_summary(raw_text, query, top_sentences=2)
             
             print(f"#{rank} | Category: [{category}] | Fusion Score: {score:.4f}")
-            print(f"📝 Snippet: {snippet}")
+            print(f"[Snippet] {snippet}")
             print("-" * 45)
 
 if __name__ == "__main__":
