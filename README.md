@@ -1,3 +1,13 @@
+---
+title: BBC News Retrieval System
+emoji: 📰
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
 # Project 12: BBC News Retrieval System & Next-Gen IR Pipeline
 
 ## 📖 Project Overview

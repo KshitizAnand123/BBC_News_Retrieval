@@ -38,6 +38,8 @@ class BBCNewsIRSystem:
 
     # Delegated Utilities
     def expand_query(self, query): return self.nlp.expand_query(query)
+    def get_expansion_details(self, query): return self.nlp.get_expansion_details(query)
+    def highlight_keywords(self, text, query): return self.nlp.highlight_keywords(text, query)
     def query_focused_summary(self, text, query, top_sentences=2): return self.nlp.query_focused_summary(text, query, top_sentences)
     def evaluate_metrics(self, retrieved_indices, relevant_category): return self.evaluator.evaluate_metrics(retrieved_indices, relevant_category, self.categories)
 
@@ -59,7 +61,7 @@ class BBCNewsIRSystem:
     def train_classifier(self):
         return self.classifier.train(self.lexical.tfidf_matrix, self.categories)
 
-    def add_live_article(self, text):
+    def add_live_article(self, text, save_to_disk=False):
         processed = self.nlp.preprocess(text)
         pred_cat = self.classifier.predict(self.lexical.tfidf, processed)
         
@@ -67,9 +69,17 @@ class BBCNewsIRSystem:
         self.categories.append(pred_cat)
         self.documents.append(processed)
         
-        # Re-index
+        # Re-index lexical model and semantic embedding
         self.lexical.fit(self.documents)
-        self.semantic.add_document(text)
+        self.semantic.add_document(text, save_to_disk=save_to_disk)
+        
+        if save_to_disk:
+            import os
+            import pandas as pd
+            csv_path = os.path.join("data", "bbc_news.csv")
+            new_df = pd.DataFrame([{"category": pred_cat, "text": text}])
+            new_df.to_csv(csv_path, mode='a', header=not os.path.exists(csv_path), index=False)
+            
         return pred_cat
 
     # Search Interfaces
@@ -82,8 +92,8 @@ class BBCNewsIRSystem:
     def search_semantic(self, query, top_n=10):
         return self.semantic.search(query, top_n)
 
-    def search_hybrid_rrf(self, query, top_n=10, k=60):
+    def search_hybrid_rrf(self, query, top_n=10, k=60, alpha=0.5, **kwargs):
         total_docs = len(self.documents)
         bm25_idx, _ = self.search_bm25(query, total_docs)
         sem_idx, _ = self.search_semantic(query, total_docs)
-        return RankFusion.rrf(bm25_idx, sem_idx, total_docs, top_n, k)
+        return RankFusion.rrf(bm25_idx, sem_idx, total_docs, top_n, k, alpha=alpha)
