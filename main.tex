@@ -1,14 +1,26 @@
 \documentclass[11pt,a4paper]{article}
 
 % ==============================================================================
-% Required Packages
+% Required Packages & Universal Engine Compatibility (pdfLaTeX / XeLaTeX / LuaLaTeX)
 % ==============================================================================
-\usepackage[utf8]{inputenc}
-\usepackage{times}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{mathptmx}
+\else
+  \usepackage{fontspec}
+\fi
+
 \usepackage[skip=10pt]{caption}
 \captionsetup{font=it}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
+\graphicspath{{./}{figures/}{./figures/}}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
@@ -37,6 +49,18 @@
 \setlength{\floatsep}{10pt}
 \setlength{\textfloatsep}{10pt}
 
+% Fail-safe graphic loader that prevents Overleaf crashes if an image is missing
+\newcommand{\SafeIncludeGraphics}[2][width=\linewidth]{%
+  \IfFileExists{#2}{%
+    \includegraphics[#1]{#2}%
+  }{%
+    \IfFileExists{figures/#2}{%
+      \includegraphics[#1]{figures/#2}%
+    }{%
+      \fbox{\parbox{0.88\linewidth}{\centering\vspace{1.2cm}\textbf{[Image: #2]}\\\small Please upload \texttt{#2} to Overleaf\vspace{1.2cm}}}%
+    }%
+  }%
+}
 \begin{document}
 
 % ==============================================================================
@@ -198,14 +222,14 @@ To inspect the structural properties of the corpus, Figure~\ref{fig:dist_cat} il
 \centering
 \begin{subfigure}[b]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{figures/dist-cat.png}
+    \SafeIncludeGraphics{dist-cat.png}
     \caption{BBC News Category Distribution}
     \label{fig:dist_cat}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{figures/doc-len.png}
+    \SafeIncludeGraphics{doc-len.png}
     \caption{Article Word Count Distribution}
     \label{fig:doc_len}
 \end{subfigure}
@@ -238,8 +262,83 @@ To resolve the dual bottlenecks of lexical vocabulary mismatch and dense semanti
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.92\linewidth]{figures/pipeline.png}
-\caption{Architectural Flowchart of the Five-Stage Hybrid Reciprocal Rank Fusion Retrieval Pipeline.}
+\begin{tikzpicture}[
+    scale=0.88, transform shape,
+    node distance=0.6cm and 1.0cm,
+    font=\sffamily\small,
+    stagebox/.style={draw=blue!70!black, fill=blue!5, rounded corners=4pt, line width=1.1pt, align=center, inner sep=6pt},
+    sparsebox/.style={draw=green!60!black, fill=green!8, rounded corners=3pt, line width=0.9pt, align=center, inner sep=5pt},
+    densebox/.style={draw=cyan!70!black, fill=cyan!8, rounded corners=3pt, line width=0.9pt, align=center, inner sep=5pt},
+    fusionbox/.style={draw=orange!80!black, fill=orange!10, rounded corners=4pt, line width=1.2pt, align=center, inner sep=6pt},
+    outputbox/.style={draw=purple!70!black, fill=purple!5, rounded corners=4pt, line width=1.1pt, align=center, inner sep=6pt},
+    arr/.style={->, >=stealth, line width=1.1pt, draw=gray!80!black}
+]
+% Stage 1: Input & Query Expansion
+\node[stagebox, text width=11.2cm] (stage1) {
+    \textbf{\large Stage 1: Query Ingestion \& Pre-Retrieval Expansion}\\
+    \footnotesize \textbf{User Search Query} $\longrightarrow$ \textbf{NLTK WordNet Synset Mining} $\longrightarrow$ \textbf{Lexically Enriched Query String}
+};
+
+% Stage 2: Dual-Stream Indexing
+\node[sparsebox, text width=5.2cm, below=0.7cm of stage1.south west, anchor=north west] (sparse_idx) {
+    \textbf{Path A: Sparse Preprocessing}\\
+    \scriptsize Lowercasing $\cdot$ Punctuation Strip\\
+    Stop-words $\cdot$ Porter Stemming\\
+    $\Downarrow$\\
+    \textbf{Inverted Index \& TF-IDF Postings}
+};
+
+\node[densebox, text width=5.2cm, below=0.7cm of stage1.south east, anchor=north east] (dense_idx) {
+    \textbf{Path B: Dense Semantic Encoding}\\
+    \scriptsize Natural Sentence Preservation\\
+    Contextual Tokenization (300 words)\\
+    $\Downarrow$\\
+    \textbf{Sentence Transformer (\texttt{all-MiniLM-L6-v2})}\\
+    \scriptsize 384-dimensional Dense Embeddings
+};
+
+% Stage 3: Retrieval Engines
+\node[sparsebox, text width=5.2cm, below=0.6cm of sparse_idx] (sparse_search) {
+    \textbf{Okapi BM25 Ranking Engine}\\
+    \scriptsize Term Saturation ($k_1=1.5$) $\cdot$ Length Norm ($b=0.75$)\\
+    $\Downarrow$\\
+    \textbf{Top-$K$ Sparse Candidate List $\mathcal{L}_{\text{sparse}}$}
+};
+
+\node[densebox, text width=5.2cm, below=0.6cm of dense_idx] (dense_search) {
+    \textbf{Dense Semantic Vector Search}\\
+    \scriptsize Query Vector $\mathbf{u} \in \mathbb{R}^{384} \cdot$ Cosine Metric $\cos(\mathbf{u}, \mathbf{v}_d)$\\
+    $\Downarrow$\\
+    \textbf{Top-$K$ Dense Candidate List $\mathcal{L}_{\text{dense}}$}
+};
+
+% Stage 4: RRF Fusion
+\node[fusionbox, text width=11.2cm, below=0.7cm of sparse_search.south west, anchor=north west] (rrf) {
+    \textbf{\large Stage 4: Reciprocal Rank Fusion (RRF) Layer}\\
+    \small $\text{RRF\_Score}(d) = \sum_{m \in \{\text{BM25}, \text{Dense}\}} \frac{1}{60 + r_m(d)}$\\
+    \scriptsize Non-parametric rank-positional synthesis $\cdot$ Zero score-scale distortion $\cdot$ Optimal candidate consensus
+};
+
+% Stage 5: Downstream Innovations
+\node[outputbox, text width=11.2cm, below=0.6cm of rrf] (stage5) {
+    \textbf{\large Stage 5: Downstream Intelligence \& Presentation}\\
+    \footnotesize
+    \begin{tabular}{c@{\quad}c@{\quad}c}
+    \textbf{Extractive Summarizer} & \textbf{3D PCA Universe} & \textbf{Real-Time ML Ingestion} \\
+    \scriptsize Jaccard Featured Snippets & \scriptsize 384-d $\to$ 3D Explainable Map & \scriptsize Logistic Regression (96.6\%)
+    \end{tabular}
+};
+
+% Connectors
+\draw[arr] (stage1.south -| sparse_idx.north) -- (sparse_idx.north);
+\draw[arr] (stage1.south -| dense_idx.north) -- (dense_idx.north);
+\draw[arr] (sparse_idx) -- (sparse_search);
+\draw[arr] (dense_idx) -- (dense_search);
+\draw[arr] (sparse_search.south) -- (sparse_search.south |- rrf.north);
+\draw[arr] (dense_search.south) -- (dense_search.south |- rrf.north);
+\draw[arr] (rrf) -- (stage5);
+\end{tikzpicture}
+\caption{Architectural Flowchart of the Five-Stage Hybrid Reciprocal Rank Fusion (RRF) Retrieval Pipeline.}
 \label{fig:pipeline_arch}
 \end{figure}
 
@@ -390,14 +489,14 @@ Figure~\ref{fig:model_comp_chart} illustrates the comparative bar chart across M
 \centering
 \begin{subfigure}[b]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{figures/model_comparison.png}
+    \SafeIncludeGraphics{model_comparison.png}
     \caption{Model Comparison across MAP and nDCG}
     \label{fig:model_comp_chart}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.48\textwidth}
     \centering
-    \includegraphics[width=\linewidth]{figures/pr_curve.png}
+    \SafeIncludeGraphics{pr_curve.png}
     \caption{Precision-Recall Curve Comparison}
     \label{fig:pr_curve_chart}
 \end{subfigure}
