@@ -234,97 +234,92 @@ To illustrate the intrinsic retrieval challenge, consider a sample technology ar
 % ==============================================================================
 \section{Methodology}
 
-Our experimental retrieval system implements a dual-path hybrid architecture that decouples lexical token indexing from neural semantic embedding generation, culminating in an integrated rank fusion step. Figure~\ref{fig:pipeline_arch} illustrates the complete structural workflow from raw query input to final answer presentation.
+To resolve the dual bottlenecks of lexical vocabulary mismatch and dense semantic drift, our system implements a systematic \textbf{Five-Stage Hybrid Information Retrieval Pipeline}. Rather than forcing a single model to handle disparate search intents, the architecture decouples lexical exact-matching from neural semantic understanding, harmonizing them at a dedicated rank aggregation layer. Figure~\ref{fig:pipeline_arch} illustrates the comprehensive end-to-end architectural flowchart.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.92\linewidth]{figures/pipeline.png}
-\caption{Architectural Flowchart of the Hybrid Reciprocal Rank Fusion (RRF) Retrieval Pipeline}
+\caption{Architectural Flowchart of the Five-Stage Hybrid Reciprocal Rank Fusion Retrieval Pipeline.}
 \label{fig:pipeline_arch}
 \end{figure}
 
-\subsection{Preprocessing and Indexing}
-To optimize retrieval across both lexical and dense modalities, our pipeline introduces a **Dual-Stream Preprocessing Architecture**:
+The five operational stages of the pipeline are structured as follows:
+
+\subsection{Stage 1: Query Ingestion and Pre-Retrieval Expansion}
+When a user submits an arbitrary natural language query $Q$, relying solely on verbatim keywords exposes the system to vocabulary mismatch. Our pipeline introduces an automated pre-retrieval query expansion step leveraging Princeton's **WordNet** lexical ontological database:
+\begin{enumerate}[label=(\alph*)]
+    \item \textbf{Token Extraction:} Query $Q$ is tokenized, lowercased, and filtered against non-content stop words.
+    \item \textbf{Synset Mining:} For each content word $w \in Q$, the system queries WordNet to extract cognitive synonym sets ($\text{synsets}(w)$) and associated lemmas.
+    \item \textbf{Semantic Query Formulation:} High-confidence synonyms are appended to synthesize an enriched query string $Q_{\text{expanded}}$, bridging lexical gaps before search evaluation while retaining the concise original query $Q$ for dense neural encoding.
+\end{enumerate}
+
+\subsection{Stage 2: Dual-Stream Indexing and Document Representation}
+A fundamental insight of modern NLP is that classical lexical search and deep transformer encoders require fundamentally conflicting text preprocessing. To maximize the performance of both paradigms, our pipeline introduces a **Dual-Stream Indexing Architecture**:
 
 \begin{enumerate}[label=\textbf{Stream \Alph*:}]
-    \item \textbf{Lexical Preprocessing (for TF-IDF and BM25):}
+    \item \textbf{Sparse Lexical Processing Stream (BM25 \& TF-IDF):}
     \begin{itemize}
-        \item \textit{Punctuation and Noise Removal:} Punctuation characters and non-alphanumeric noise are stripped using custom translation tables.
-        \item \textit{Case Normalization:} All text is converted to lowercase to eliminate case sensitivity.
-        \item \textit{Tokenization:} Documents are tokenized into constituent word tokens via NLTK \texttt{word\_tokenize}.
-        \item \textit{Stop-Word Filtering:} High-frequency non-informative English stop-words (e.g., \textit{``the''}, \textit{``is''}, \textit{``at''}) are removed using NLTK's English stop-word lexicon.
-        \item \textit{Morphological Stemming:} Tokens are reduced to their root morphological base using the **Porter Stemmer** (e.g., \textit{``running''} $\rightarrow$ \textit{``run''}, \textit{``economies''} $\rightarrow$ \textit{``economi''}).
-        \item \textit{Inverted Index Construction:} An inverted index mapping each stemmed term to its posting list (containing document IDs and term frequencies) is built, facilitating $\mathcal{O}(1)$ term lookup.
+        \item \textit{Normalization \& Cleaning:} Punctuation, non-alphanumeric noise, and URLs are stripped using optimized translation tables.
+        \item \textit{Stop-Word Elimination:} High-frequency grammatical words (e.g., \textit{``the''}, \textit{``is''}, \textit{``and''}) are pruned using NLTK's English stopword corpus.
+        \item \textit{Morphological Stemming:} Words are stemmed to their root morphological base using the \textbf{Porter Stemmer} (e.g., \textit{``investments''} $\rightarrow$ \textit{``invest''}, \textit{``computing''} $\rightarrow$ \textit{``comput''}).
+        \item \textit{Inverted Index Construction:} An inverted index data structure is constructed mapping each unique stemmed vocabulary term $t$ to its posting list $\mathcal{P}(t) = \{(d_1, f_1), (d_2, f_2), \dots\}$, enabling $\mathcal{O}(1)$ posting traversal.
     \end{itemize}
 
-    \item \textbf{Dense Semantic Stream (for Sentence Transformers):}
+    \item \textbf{Dense Semantic Processing Stream (Sentence Transformers):}
     \begin{itemize}
-        \item Rather than feeding stemmed, stopword-free tokens to the neural network, the dense encoder is provided with **raw, natural sentences**.
-        \item Transformer architectures rely on deep bidirectional self-attention mechanisms where punctuation, casing, and syntactic stop-words are essential to discern grammatical nuance and contextual semantics. Stripping them degrades embedding quality.
-        \item Documents are truncated at 300 words to adhere to the transformer's optimal token window while capturing the salient core of each news article.
+        \item Unlike the lexical stream, the dense encoder is provided with **raw, grammatically intact sentences**. Deep bidirectional transformers rely on multi-head self-attention mechanisms; stripping stop words or applying aggressive stemming degrades syntax and compromises embedding quality.
+        \item Long news articles are contextually chunked to a window of 300 words to preserve the salient journalistic core while conforming to the transformer's token input constraints.
+        \item Each document is passed through the pre-trained \texttt{all-MiniLM-L6-v2} neural network, generating a static 384-dimensional dense semantic embedding $\mathbf{v}_d \in \mathbb{R}^{384}$.
     \end{itemize}
 \end{enumerate}
 
-\subsection{Ranking Models}
-We implement and evaluate four distinct document ranking models:
+\subsection{Stage 3: Multi-Paradigm Retrieval and Scoring Engines}
+During retrieval execution, the query is dispatched simultaneously across two independent scoring branches:
 
-\subsubsection{1. TF-IDF Vector Space Model (Baseline)}
-The Term Frequency--Inverse Document Frequency model computes a static sparse vector for each document and query in a high-dimensional vocabulary space:
-\begin{equation}
-\text{TF-IDF}(t, d, D) = \text{TF}(t, d) \times \log\left(\frac{1 + |D|}{1 + \text{DF}(t)} + 1\right)
-\end{equation}
-Relevance between query vector $\mathbf{q}$ and document vector $\mathbf{d}$ is evaluated using Cosine Similarity:
-\begin{equation}
-\text{Sim}_{\text{TF-IDF}}(\mathbf{q}, \mathbf{d}) = \frac{\mathbf{q} \cdot \mathbf{d}}{\|\mathbf{q}\| \|\mathbf{d}\|}
-\end{equation}
-
-\subsubsection{2. Okapi BM25 Probabilistic Model}
-Okapi BM25 is a non-linear probabilistic retrieval function derived from the 2-Poisson indexing framework. It introduces two vital advancements over TF-IDF: (i) term frequency saturation (limiting the impact of repeated keywords) and (ii) document length normalization:
+\subsubsection{Branch A: Probabilistic Keyword Scoring (Okapi BM25)}
+Okapi BM25 evaluates document relevance based on non-linear term frequency saturation and document length normalization:
 \begin{equation}
 \text{Score}_{\text{BM25}}(D, Q) = \sum_{i=1}^{n} \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}
 \end{equation}
-where $f(q_i, D)$ is the term frequency of query word $q_i$ in document $D$, $|D|$ is the length of document $D$ in words, $\text{avgdl}$ is the average document length across the corpus, $k_1 = 1.5$ regulates term saturation, and $b = 0.75$ controls document length normalization.
+where $k_1 = 1.5$ regulates term saturation (capping the marginal score boost from repeating terms) and $b = 0.75$ controls the penalty for document length $|D|$ relative to the average length $\text{avgdl}$. This yields a ranked sparse candidate list $\mathcal{L}_{\text{sparse}}$.
 
-\subsubsection{3. Sentence Transformers (Dense Semantic Retrieval)}
-We employ the pre-trained \texttt{sentence-transformers/all-MiniLM-L6-v2} model, a 6-layer MiniLM transformer fine-tuned on over 1 billion sentence pairs using contrastive loss. The model maps documents and queries into a continuous 384-dimensional dense vector space $\mathbb{R}^{384}$. 
-
-Relevance between the dense query vector $\mathbf{u} \in \mathbb{R}^{384}$ and dense document embedding $\mathbf{v} \in \mathbb{R}^{384}$ is computed via cosine similarity:
+\subsubsection{Branch B: Dense Semantic Geometry (Cosine Proximity)}
+Simultaneously, the dense transformer encodes the natural query $Q$ into vector $\mathbf{u} \in \mathbb{R}^{384}$. Relevance across all document vectors $\mathbf{v}_d$ is computed via geometric Cosine Similarity:
 \begin{equation}
-\text{Score}_{\text{Dense}}(Q, D) = \cos(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2 \|\mathbf{v}\|_2}
+\text{Score}_{\text{Dense}}(Q, D) = \cos(\mathbf{u}, \mathbf{v}_d) = \frac{\mathbf{u} \cdot \mathbf{v}_d}{\|\mathbf{u}\|_2 \|\mathbf{v}_d\|_2}
 \end{equation}
+This yields an independent ranked dense candidate list $\mathcal{L}_{\text{dense}}$.
 
-\subsubsection{4. Hybrid Reciprocal Rank Fusion (RRF)}
-A persistent challenge in hybrid search is the mathematical incompatibility of individual scoring scales: BM25 produces unbounded positive real scores ($[0, \infty)$), whereas Cosine Similarity produces normalized values bounded within $[-1, 1]$. Direct linear interpolation ($\alpha S_{\text{BM25}} + (1-\alpha) S_{\text{Dense}}$) requires sensitive hyperparameter tuning and is brittle across queries.
+\subsection{Stage 4: Reciprocal Rank Fusion (RRF) Aggregation}
+Because BM25 outputs unbounded positive scores ($[0, \infty)$) while Cosine Similarity outputs normalized real numbers ($[-1, 1]$), linear score combination ($\alpha S_{\text{BM25}} + (1-\alpha) S_{\text{Dense}}$) is unstable and requires sensitive per-query tuning.
 
-To overcome this, we implement **Reciprocal Rank Fusion (RRF)**. RRF completely disregards raw numerical score magnitudes and relies exclusively on the **ordinal rank position** of each document across the respective retrieval lists.
-
-\subsection{Reciprocal Rank Fusion Formulation}
-Given a set of ranking models $M = \{\text{BM25}, \text{Dense}\}$ and an empirical smoothing constant $k$, the aggregated RRF score for document $d \in D$ is formulated as:
+Our pipeline employs **Reciprocal Rank Fusion (RRF)**, which aggregates candidates strictly by their **relative ordinal rank position**:
 \begin{equation}
 \text{RRF\_Score}(d \in D) = \sum_{m \in M} \frac{1}{k + r_m(d)}
 \end{equation}
-where $r_m(d)$ represents the 1-based rank position assigned to document $d$ by retrieval model $m$, and $k$ is set to the standard constant of $60$ (as established by Cormack et al. \cite{cormack2009}).
+where $M = \{\text{BM25}, \text{Dense}\}$, $r_m(d)$ represents the 1-based rank position of document $d$ in ranking list $m$, and $k$ is the canonical smoothing constant set to $60$. 
 
-\textbf{Mathematical Justification:} The term $\frac{1}{k + r_m(d)}$ acts as a harmonic decay function. The hyperparameter $k=60$ mitigates the undue influence of documents ranked at the very top of a single list, ensuring that documents appearing consistently near the top of \textit{both} sparse and dense lists achieve the highest combined score.
+\textbf{Rank Invariance Property:} Documents scoring consistently high across both sparse and dense rankings receive an additive boost, while documents that appear at the top of only one list are gracefully regularized by the $k=60$ harmonic denominator.
 
-\subsection{Specialized System Innovations}
-Beyond the baseline ranking algorithms, our system incorporates four major innovations:
+\subsection{Stage 5: Post-Retrieval Intelligence and Output Presentation}
+Following global candidate ranking, the top-$K$ documents are routed through three specialized downstream intelligence modules:
 
 \begin{enumerate}[label=\textbf{\arabic*.}]
-    \item \textbf{Automated WordNet Query Expansion:} To proactively tackle vocabulary mismatch before inverted index evaluation, the system intercepts the user query, identifies content tokens, queries Princeton's WordNet lexical database, and appends high-confidence cognitive synonyms (synsets) to the query string.
-    
-    \item \textbf{Query-Focused Extractive Summarization (Featured Snippets):} Traditional search engines return arbitrary first-sentence previews. Our system segments retrieved articles into sentences, computes Jaccard-style token overlap against the query, and extracts the top 1--2 most informative sentences. Because it is purely extractive, it delivers zero generative hallucination with sub-millisecond execution.
-    
-    \item \textbf{Explainable AI via 3D PCA Semantic Mapping:} To demystify the black-box nature of transformer embeddings, we apply Principal Component Analysis (PCA) to project the 384-dimensional dense vectors onto an interactive 3D coordinate space ($X, Y, Z$). When a query is issued, it is embedded, projected, and rendered alongside document clusters in Plotly, visually demonstrating semantic clustering and proximity.
-    
-    \item \textbf{Real-Time ML News Categorization \& Ingestion:} The system incorporates a trained **Logistic Regression** classifier on the TF-IDF feature space (achieving 96.63\% accuracy). Users can paste breaking live news into the dashboard; the model classifies the article and hot-swaps it into both the lexical inverted index and dense semantic vector space in under 0.5 seconds.
+    \item \textbf{Query-Focused Extractive Summarization (Featured Snippets):}
+    Rather than displaying arbitrary first-paragraph previews, our extractive engine tokenizes each retrieved article into individual sentences. It computes the Jaccard-style token overlap between each candidate sentence $S_i$ and the query $Q$:
+    \begin{equation}
+    \text{Score}_{\text{overlap}}(S_i, Q) = \frac{|\text{Tokens}(S_i) \cap \text{Tokens}(Q)|}{|\text{Tokens}(Q)|}
+    \end{equation}
+    The top 1--2 highest-scoring sentences are extracted and presented as an instant answer snippet. This guarantees 100\% factual grounding with zero risk of generative hallucinations.
+
+    \item \textbf{Explainable AI via 3D PCA Semantic Mapping:}
+    To demystify neural representations for non-expert users and evaluators, the system applies **Principal Component Analysis (PCA)** to reduce the 384-dimensional vector space into interactive 3D coordinates $(X, Y, Z)$. The user query and article clusters are plotted in an interactive Plotly universe, visually validating semantic proximity.
+
+    \item \textbf{Real-Time ML News Ingestion Pipeline:}
+    To support dynamic media environments, the system integrates a trained **Logistic Regression** classifier on the TF-IDF feature space (achieving 96.63\% validation accuracy). When a user submits breaking news, the system predicts its category and dynamically hot-swaps the document into both the lexical inverted index and dense vector store in under 0.5 seconds without system downtime.
 \end{enumerate}
 
-\newpage
 
-% ==============================================================================
-% 4. Experimental Setup and Performance Analysis
-% ==============================================================================
 \section{Experimental Setup and Performance Analysis}
 
 \subsection{Evaluation Metrics}
