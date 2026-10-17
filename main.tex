@@ -50,7 +50,7 @@
 \setlength{\floatsep}{8pt}
 \setlength{\textfloatsep}{8pt}
 
-% Fail-safe graphic loader that prevents Overleaf crashes if an image is missing
+% Fail-safe graphic loader
 \newcommand{\SafeIncludeGraphics}[2][width=\linewidth]{%
   \IfFileExists{#2}{%
     \includegraphics[#1]{#2}%
@@ -66,7 +66,7 @@
 \begin{document}
 
 % ==============================================================================
-% Title Page (Classic Clean Format with No Table)
+% Title Page
 % ==============================================================================
 \begin{titlepage}
 \centering
@@ -82,17 +82,16 @@
 {\normalsize Towards the partial fulfillment of the Award of the Degree of}\\[0.2cm]
 {\normalsize \textbf{BACHELOR OF TECHNOLOGY}}\\[0.2cm]
 {\normalsize In Computer Science and Engineering}\\[0.2cm]
-{\normalsize Section: C $\quad\vert\quad$ Project 12: BBC News Retrieval}\\[0.3cm]
+{\normalsize Section: C}\\[0.3cm]
 
 {\normalsize 2023--2027}\\[1.0cm]
 
 {\normalsize By}\\[0.3cm]
-{\normalsize \textbf{Mahir Desai - 23FE10CSE00345 (Team Leader)}}\\[0.15cm]
+{\normalsize \textbf{Mahir Desai - 23FE10CSE00345}}\\[0.15cm]
 {\normalsize \textbf{Vivek Kumar Garg - 23FE10CSE00742}}\\[0.15cm]
 {\normalsize \textbf{Abhinav Arora - 23FE10CSE00059}}\\[0.15cm]
 {\normalsize \textbf{Kshitiz Anand - 23FE10CSE00773}}\\[0.9cm]
 
-% University Logo
 \IfFileExists{logo.png}{%
   \includegraphics[width=0.42\textwidth]{logo.png}\\[0.5cm]
 }{%
@@ -117,7 +116,7 @@
 \newpage
 
 % ==============================================================================
-% Abstract (Clean, Simple, Easy to Explain)
+% Abstract
 % ==============================================================================
 \section*{\centering Abstract}
 
@@ -150,30 +149,30 @@ Empirical evaluations show that the Hybrid RRF model achieves superior performan
 % ==============================================================================
 \section{Introduction}
 
-Information Retrieval (IR) is the foundational technology that powers search engines, digital news portals, customer support knowledge bases, and modern question-answering systems. At its core, an Information Retrieval system takes an unstructured natural language user query and searches across a large repository of documents to identify, rank, and return the most relevant information within milliseconds.
+Information Retrieval (IR) is the foundational technology that powers search engines, digital news portals, customer support knowledge bases, and modern question-answering systems. At its core, an IR system takes an unstructured natural language query and searches across a large repository of documents to identify, rank, and return the most relevant information.
 
-With the exponential growth of online journalism and digital news media, news archives present unique and demanding search challenges. News articles cover diverse domains such as politics, corporate business, athletics, technology, and arts. Users searching a news repository exhibit diverse search intents: some search for specific named entities (e.g., \textit{``Apple fiscal earnings report''}), while others submit broad conceptual questions (e.g., \textit{``impact of inflation on consumer spending''}). A successful news retrieval engine must satisfy both exact-keyword lookups and abstract conceptual inquiries with equal precision.
+With the growth of online journalism and digital news media, news archives present unique and demanding search challenges. Users searching a news repository exhibit diverse search intents: some search for specific named entities (e.g., \textit{``Apple fiscal earnings report''}), while others submit broad conceptual questions (e.g., \textit{``impact of inflation on consumer spending''}). A successful news retrieval engine must handle both exact keyword lookups and abstract conceptual inquiries with equal precision.
 
-Historically, search systems have relied primarily on \textbf{sparse lexical matching algorithms}, such as Term Frequency--Inverse Document Frequency (TF-IDF) and the probabilistic Okapi BM25 algorithm. In these classical formulations, documents and queries are represented as sparse vectors over a fixed vocabulary. An inverted index data structure is constructed to map every vocabulary word to the list of documents containing that word. Lexical methods offer remarkable computational efficiency, low memory footprints, and near-instantaneous query response times.
+Historically, search systems have relied on \textbf{sparse lexical matching algorithms} such as Term Frequency--Inverse Document Frequency (TF-IDF) and the probabilistic Okapi BM25. In these classical approaches, documents and queries are represented as sparse vectors over a fixed vocabulary, and an inverted index structure enables near-instantaneous keyword lookup.
 
-However, purely lexical matching models face fundamental linguistic limitations:
+However, purely lexical methods face fundamental linguistic limitations:
 \begin{enumerate}[label=(\alph*)]
-    \item \textbf{The Vocabulary Mismatch Problem:} Natural language allows the same concept to be expressed in multiple ways. A user querying \textit{``automobile shares slump''} will fail to match a relevant news article titled \textit{``car stock market drops''} under strict keyword matching because the authors used different synonyms.
-    \item \textbf{Lack of Semantic Context:} Lexical models operate under the \textit{bag-of-words} assumption, treating words as isolated tokens and ignoring syntax, polysemy (words with multiple meanings), and semantic relationships.
-    \item \textbf{Term Saturation Sensitivity:} Simple frequency counters can be skewed by keyword repetition, necessitating careful term frequency damping.
+    \item \textbf{The Vocabulary Mismatch Problem:} A user querying \textit{``automobile shares slump''} will fail to match an article titled \textit{``car stock market drops''} because the authors used different synonyms for the same concept.
+    \item \textbf{Lack of Semantic Context:} Lexical models operate under the \textit{bag-of-words} assumption, treating words as isolated independent tokens and ignoring synonyms, polysemy (words with multiple meanings), and contextual relationships.
+    \item \textbf{Term Saturation Sensitivity:} Simple frequency counters can be distorted by keyword repetition, requiring careful term frequency damping and document length normalization.
 \end{enumerate}
 
-In recent years, the development of deep bidirectional transformer models (such as BERT and Sentence Transformers) has enabled \textbf{dense semantic retrieval}. Instead of matching exact characters or stems, dense encoders convert passages and queries into high-dimensional continuous vector embeddings (e.g., 384 dimensions) where geometric proximity directly corresponds to semantic relatedness. While dense models excel at understanding context, intent, and synonyms, they are computationally intensive and can occasionally drift away from exact keywords or specialized names.
+Recent advances in deep learning introduced \textbf{dense semantic retrieval} through Sentence Transformers (such as Sentence-BERT). These models encode passages and queries into high-dimensional continuous vector embeddings (e.g., 384 dimensions) where geometric proximity corresponds to semantic relatedness. While dense models excel at understanding context and synonyms, they are computationally heavier and can sometimes overlook exact named entities or rare technical terms.
 
 \subsection{Project Objectives}
-The primary objective of this project is to build and evaluate an end-to-end \textbf{Hybrid Search Engine} for the categorized BBC News Archive. Specifically, we aim to:
+The primary objectives of this project are:
 \begin{itemize}[leftmargin=1.5em]
-    \item Combine sparse lexical retrieval (Okapi BM25) and dense semantic retrieval (Sentence Transformers) using **Reciprocal Rank Fusion (RRF)**.
-    \item Eliminate the vocabulary mismatch problem using automated **WordNet Query Expansion**.
-    \item Provide instant query-focused extractive summaries to act as **Featured Snippets**.
-    \item Offer explainability through an interactive **3D PCA Semantic Universe**.
-    \item Enable live breaking news categorization and indexing using a trained **Logistic Regression** model.
-    \item Measure retrieval quality using industry-standard metrics: Precision@10, Recall, Mean Average Precision (MAP), and Normalized Discounted Cumulative Gain (nDCG@10).
+    \item Combine sparse lexical retrieval (Okapi BM25) and dense semantic retrieval (Sentence Transformers) using \textbf{Reciprocal Rank Fusion (RRF)}.
+    \item Eliminate the vocabulary mismatch problem using automated \textbf{WordNet Query Expansion}.
+    \item Provide instant query-focused extractive summaries as \textbf{Featured Snippets}.
+    \item Offer explainability through an interactive \textbf{3D PCA Semantic Map}.
+    \item Enable live breaking news categorization and indexing using a trained \textbf{Logistic Regression} model.
+    \item Measure retrieval quality using standard IR metrics: Precision@10, Recall, Mean Average Precision (MAP), and Normalized Discounted Cumulative Gain (nDCG@10).
 \end{itemize}
 
 \newpage
@@ -183,19 +182,19 @@ The primary objective of this project is to build and evaluate an end-to-end \te
 % ==============================================================================
 \section{About Dataset}
 
-The empirical evaluations in this report are conducted on the benchmark \textbf{BBC News Archive Dataset}, widely utilized in natural language processing and information retrieval research (Greene and Cunningham, 2006). The corpus comprises **2,225 full-length news articles** published between 2004 and 2005.
+The empirical evaluations in this report are conducted on the benchmark \textbf{BBC News Archive Dataset}, widely used in natural language processing and information retrieval research (Greene and Cunningham, 2006). The corpus comprises \textbf{2,225 full-length news articles} published between 2004 and 2005.
 
 The articles are categorized into five distinct topical domains:
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Business (510 articles, 22.9\%):} Focuses on financial markets, corporate mergers, economic policies, international trade, inflation, and interest rate announcements.
-    \item \textbf{Sport (511 articles, 23.0\%):} Covers athletic competitions, match results, tournament updates, football championships, rugby, athletics, and player transfers.
-    \item \textbf{Politics (417 articles, 18.7\%):} Reports on government policy, parliamentary debates, election campaigns, legislation, political scandals, and diplomatic summits.
-    \item \textbf{Tech (401 articles, 18.0\%):} Covers computer hardware, consumer electronics, internet security, software developments, artificial intelligence, and digital privacy.
-    \item \textbf{Entertainment (386 articles, 17.4\%):} Covers cinema, music, television, celebrity news, music charts, festival releases, and prestigious awards (e.g., the Oscars).
+    \item \textbf{Business (510 articles, 22.9\%):} Financial markets, corporate mergers, economic policies, international trade, inflation, and interest rate announcements.
+    \item \textbf{Sport (511 articles, 23.0\%):} Athletic competitions, match results, tournament updates, football championships, rugby, athletics, and player transfers.
+    \item \textbf{Politics (417 articles, 18.7\%):} Government policy, parliamentary debates, election campaigns, legislation, political scandals, and diplomatic summits.
+    \item \textbf{Tech (401 articles, 18.0\%):} Computer hardware, consumer electronics, internet security, software developments, artificial intelligence, and digital privacy.
+    \item \textbf{Entertainment (386 articles, 17.4\%):} Cinema, music, television, celebrity news, music charts, festival releases, and awards (e.g., the Oscars).
 \end{itemize}
 
 \subsection{Dataset Distribution and Properties}
-Table~\ref{tab:dataset_stats} summarizes the document counts, corpus proportions, and length properties across the five categories.
+Table~\ref{tab:dataset_stats} summarizes the document counts, corpus proportions, and word count statistics across the five categories.
 
 \begin{table}[H]
 \centering
@@ -203,12 +202,12 @@ Table~\ref{tab:dataset_stats} summarizes the document counts, corpus proportions
 \begin{tabular}{|l|c|c|c|}
 \hline
 \textbf{Category} & \textbf{Number of Articles} & \textbf{Percentage of Corpus} & \textbf{Average Word Count} \\ \hline
-Business & 510 & 22.9\% & 328.8 \\ \hline
-Sport & 511 & 23.0\% & 336.5 \\ \hline
-Politics & 417 & 18.7\% & 451.6 \\ \hline
+Business & 510 & 22.9\% & 328.9 \\ \hline
+Sport & 511 & 23.0\% & 329.3 \\ \hline
+Politics & 417 & 18.7\% & 454.0 \\ \hline
 Tech & 401 & 18.0\% & 502.7 \\ \hline
-Entertainment & 386 & 17.4\% & 330.5 \\ \hline
-\textbf{Overall / Total} & \textbf{2,225} & \textbf{100.0\%} & \textbf{383.4} \\ \hline
+Entertainment & 386 & 17.4\% & 330.6 \\ \hline
+\textbf{Overall / Total} & \textbf{2,225} & \textbf{100.0\%} & \textbf{384.0} \\ \hline
 \end{tabular}
 \caption{Category Distribution and Document Statistics of the BBC News Dataset}
 \label{tab:dataset_stats}
@@ -238,20 +237,20 @@ Figure~\ref{fig:eda_plots} illustrates the distribution of articles across categ
 
 \textbf{Observations on Data Distribution:}
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Balanced Class Representation:} Each of the five categories contains approximately 17\% to 23\% of the total corpus, preventing any single class from dominating during retrieval evaluation.
-    \item \textbf{Variance in Article Length:} While Sports and Entertainment articles average approximately 330 words, Technology and Politics articles average over 450 to 500 words. This variation highlights the importance of length normalization in Okapi BM25 to ensure longer articles are not unfairly favored.
+    \item \textbf{Balanced Class Representation:} Each of the five categories contains approximately 17\% to 23\% of the total corpus, preventing any single class from dominating retrieval evaluation.
+    \item \textbf{Right-Skewed Word Count Distribution:} The word count histogram (Figure~\ref{fig:doc_len}) exhibits a \textit{right-skewed} (positively skewed) distribution. Most articles are concentrated around 250--400 words (the peak), while a long tail extends toward longer investigative articles (700--900+ words). The median word count (332 words) is lower than the mean (384 words), confirming the rightward skew. This variance underscores the importance of Okapi BM25's document length normalization parameter ($b$), which prevents longer articles from being unfairly favored during retrieval.
 \end{itemize}
 
 \subsection{Illustrative Dataset Example}
-To understand the practical challenges of searching this archive, consider a sample text snippet from article \texttt{tech\_084}:
+Consider this excerpt from a technology article in the dataset:
 \begin{quote}
 \textit{``Handset makers are targeting mobile gaming enthusiasts with dedicated graphics processors, ergonomic buttons, and extended battery architectures to challenge portable consoles...''}
 \end{quote}
 If a user submits the query \textit{``portable video game hardware''}:
 \begin{itemize}[leftmargin=1.5em]
-    \item A classical lexical search (TF-IDF) scores this article poorly because neither \textit{``video''} nor \textit{``hardware''} appears verbatim in the passage.
-    \item Our Sentence Transformer encoder recognizes the conceptual equivalence between \textit{``mobile gaming enthusiasts''} and \textit{``video game''}, successfully retrieving the document.
-    \item Conversely, if the user queries a specific manufacturer name (e.g., \textit{``Nokia N-Gage''}), Okapi BM25 ensures the exact named entity is prioritized at rank 1.
+    \item A classical lexical search (TF-IDF) scores this article poorly because neither \textit{``video''} nor \textit{``hardware''} appears verbatim.
+    \item Our Sentence Transformer recognizes the conceptual equivalence between \textit{``mobile gaming enthusiasts''} and \textit{``video game''}, successfully retrieving the document.
+    \item Conversely, if the user queries a specific brand name (e.g., \textit{``Nokia N-Gage''}), Okapi BM25 ensures the exact match is prioritized at rank~1.
 \end{itemize}
 
 \newpage
@@ -261,7 +260,7 @@ If a user submits the query \textit{``portable video game hardware''}:
 % ==============================================================================
 \section{Methodology}
 
-Our system implements a four-step hybrid search architecture. Rather than relying on a single retrieval method, the system runs two complementary search branches in parallel and mathematically combines their rankings using Reciprocal Rank Fusion.
+Our system implements a four-step hybrid search architecture. Rather than relying on a single algorithm, the system runs two complementary search branches in parallel and mathematically fuses their rankings using Reciprocal Rank Fusion.
 
 Figure~\ref{fig:pipeline_arch} illustrates the complete end-to-end flowchart of the search pipeline.
 
@@ -276,24 +275,22 @@ Figure~\ref{fig:pipeline_arch} illustrates the complete end-to-end flowchart of 
     fusionbox/.style={draw=black, fill=gray!15, rounded corners=4pt, very thick, align=center, inner sep=7pt, text width=10.2cm},
     arr/.style={->, >=stealth, thick, draw=black}
 ]
-% Step 1: Input Query (Centered at x=0)
 \node[mainbox, text width=9.2cm] (q) at (0, 0) {
     \textbf{Step 1: User Search Query}\\
     \small Natural language input (e.g., \textit{``stock market shares economy''})
 };
 
-% Step 2: Processing & Expansion (Centered at x=0)
 \node[mainbox, text width=9.2cm] (prep) at (0, -1.3) {
     \textbf{Step 2: Query Processing \& WordNet Expansion}\\
-    \small Tokenization $\cdot$ Lowercasing $\cdot$ WordNet Synonym Expansion
+    \small Tokenization $\cdot$ Lowercasing $\cdot$ Stop-word Removal $\cdot$ Synonym Expansion
 };
 
-% Step 3: Dual Branches (Symmetrically placed at x=-3.1 and x=+3.1)
 \node[branchbox] (bm25) at (-3.1, -3.3) {
     \textbf{Branch A: Sparse Keyword Search}\\
     \textbf{(Okapi BM25)}\\
     \vspace{2pt}
-    \footnotesize Matches exact keywords via Inverted Index\\
+    \footnotesize Porter Stemming $\cdot$ Inverted Index\\
+    Exact keyword matching\\
     $\Downarrow$\\
     \textbf{Ranked Keyword Candidate List}
 };
@@ -302,25 +299,23 @@ Figure~\ref{fig:pipeline_arch} illustrates the complete end-to-end flowchart of 
     \textbf{Branch B: Dense Semantic Search}\\
     \textbf{(Sentence Transformers)}\\
     \vspace{2pt}
-    \footnotesize Captures conceptual meaning via 384-d vectors\\
+    \footnotesize Raw sentences $\cdot$ 384-dim vectors\\
+    Cosine similarity scoring\\
     $\Downarrow$\\
     \textbf{Ranked Semantic Candidate List}
 };
 
-% Step 4: RRF Fusion (Centered at x=0)
-\node[fusionbox] (rrf) at (0, -5.4) {
+\node[fusionbox] (rrf) at (0, -5.6) {
     \textbf{Step 3: Reciprocal Rank Fusion (RRF) Aggregator}\\
     \small $\text{Score}(d) = \sum_{m \in \{\text{BM25}, \text{Dense}\}} \frac{1}{60 + \text{Rank}_m(d)}$\\
-    \footnotesize Fuses ordinal rank positions from both models to eliminate score scaling distortion
+    \footnotesize Fuses ordinal rank positions from both models; eliminates score-scale distortion
 };
 
-% Step 5: Final Output (Centered at x=0)
-\node[mainbox, text width=10.2cm] (out) at (0, -7.0) {
+\node[mainbox, text width=10.2cm] (out) at (0, -7.2) {
     \textbf{Step 4: Final Search Results \& Answer Presentation}\\
     \small Top-$K$ Ranked Articles $\cdot$ Featured Answer Snippets $\cdot$ 3D Semantic Map
 };
 
-% Connections
 \draw[arr] (q) -- (prep);
 \draw[arr] (prep.south) -- ++(0,-0.3) -| (bm25.north);
 \draw[arr] (prep.south) -- ++(0,-0.3) -| (dense.north);
@@ -338,16 +333,16 @@ A critical design decision in our system is that lexical search and neural trans
 \begin{itemize}[leftmargin=1.5em]
     \item \textbf{Lexical Preprocessing (for BM25 and TF-IDF):}
     \begin{itemize}
-        \item Text is converted to lowercase and punctuation is stripped.
+        \item Text is converted to lowercase and all punctuation is stripped.
         \item Non-informative grammatical stop words (e.g., \textit{``the''}, \textit{``is''}, \textit{``at''}) are removed using NLTK's English stopword corpus.
-        \item Words are reduced to their root forms using the \textbf{Porter Stemmer} (e.g., \textit{``investments''} becomes \textit{``invest''}, \textit{``shares''} becomes \textit{``share''}).
-        \item An **Inverted Index** is constructed, mapping each unique stemmed vocabulary term to its posting list containing document IDs and term frequencies.
+        \item Words are reduced to their root forms using the \textbf{Porter Stemmer} (e.g., \textit{``investments''} becomes \textit{``invest''}, \textit{``computing''} becomes \textit{``comput''}).
+        \item An \textbf{Inverted Index} is constructed, mapping each unique stemmed term to the list of documents containing that term along with its frequency, enabling rapid $\mathcal{O}(1)$ keyword lookup.
     \end{itemize}
     \item \textbf{Semantic Preprocessing (for Sentence Transformers):}
     \begin{itemize}
         \item In contrast, the Sentence Transformer is provided with \textbf{raw, grammatically intact sentences}.
-        \item Deep neural networks rely on multi-head self-attention mechanisms where capitalization, punctuation, and grammatical stop words provide essential syntactic cues. Removing them degrades embedding quality.
-        \item Articles are truncated to a 300-word context window to capture the journalistic lead while conforming to transformer token limits.
+        \item Deep neural networks rely on multi-head self-attention mechanisms where capitalization, punctuation, and grammatical stop words provide essential syntactic cues. Removing them degrades the quality of the generated embeddings.
+        \item Articles are truncated to a 300-word context window to capture the journalistic lead while conforming to the transformer's token input constraints.
     \end{itemize}
 \end{itemize}
 
@@ -355,40 +350,69 @@ A critical design decision in our system is that lexical search and neural trans
 We implement and benchmark four distinct ranking strategies:
 
 \subsubsection{1. TF-IDF Vector Space Model (Baseline)}
-The Term Frequency--Inverse Document Frequency model represents each document and query as sparse vectors. Relevance is computed using Cosine Similarity:
+The Term Frequency--Inverse Document Frequency model represents each document and query as sparse vectors in a high-dimensional vocabulary space. Relevance between query vector $\mathbf{q}$ and document vector $\mathbf{d}$ is computed using Cosine Similarity:
 \begin{equation}
 \text{Sim}_{\text{TF-IDF}}(\mathbf{q}, \mathbf{d}) = \frac{\mathbf{q} \cdot \mathbf{d}}{\|\mathbf{q}\| \|\mathbf{d}\|}
 \end{equation}
+where:
+\begin{itemize}[leftmargin=1.5em, topsep=2pt]
+    \item $\mathbf{q} \cdot \mathbf{d}$ is the dot product of the query and document TF-IDF vectors,
+    \item $\|\mathbf{q}\|$ and $\|\mathbf{d}\|$ are the Euclidean norms (magnitudes) of the query and document vectors respectively.
+\end{itemize}
 
 \subsubsection{2. Okapi BM25 Probabilistic Model}
-Okapi BM25 improves on TF-IDF by introducing non-linear term saturation (capping the score benefit of repeating terms) and document length normalization:
+Okapi BM25 improves on TF-IDF by introducing non-linear term saturation and document length normalization:
 \begin{equation}
 \text{Score}_{\text{BM25}}(D, Q) = \sum_{i=1}^{n} \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}
 \end{equation}
-where $k_1 = 1.5$ controls term saturation and $b = 0.75$ controls document length normalization relative to the average length $\text{avgdl}$.
+where:
+\begin{itemize}[leftmargin=1.5em, topsep=2pt]
+    \item $Q = \{q_1, q_2, \dots, q_n\}$ is the set of query terms,
+    \item $D$ is the candidate document being scored,
+    \item $f(q_i, D)$ is the frequency of query term $q_i$ in document $D$,
+    \item $|D|$ is the length of document $D$ measured in words,
+    \item $\text{avgdl}$ is the average document length across the entire corpus,
+    \item $\text{IDF}(q_i)$ is the Inverse Document Frequency of term $q_i$, measuring how rare or common the term is across all documents,
+    \item $k_1 = 1.5$ is the term saturation parameter (it caps the marginal score benefit of repeating the same keyword),
+    \item $b = 0.75$ is the length normalization parameter (it penalizes longer documents proportionally to how much they exceed the average length).
+\end{itemize}
 
-\subsubsection{3. Sentence Transformers (\texttt{all-MiniLM-L6-v2})}
-We use the pre-trained \texttt{all-MiniLM-L6-v2} model, which maps sentences into a continuous 384-dimensional dense vector space $\mathbb{R}^{384}$. Relevance between query vector $\mathbf{u}$ and document vector $\mathbf{v}$ is evaluated using Cosine Similarity:
+\subsubsection{3. Sentence Transformers (Dense Semantic Retrieval)}
+We use the pre-trained \texttt{sentence-transformers/all-MiniLM-L6-v2} model, a 6-layer MiniLM transformer. It encodes text into a continuous 384-dimensional dense vector space $\mathbb{R}^{384}$. Relevance between query vector $\mathbf{u}$ and document vector $\mathbf{v}$ is evaluated using Cosine Similarity:
 \begin{equation}
 \cos(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}
 \end{equation}
+where:
+\begin{itemize}[leftmargin=1.5em, topsep=2pt]
+    \item $\mathbf{u} \in \mathbb{R}^{384}$ is the dense embedding vector of the search query,
+    \item $\mathbf{v} \in \mathbb{R}^{384}$ is the dense embedding vector of a candidate document,
+    \item A score close to $1.0$ indicates high semantic similarity; a score close to $0$ indicates low similarity.
+\end{itemize}
 
 \subsubsection{4. Hybrid Reciprocal Rank Fusion (RRF)}
-A key challenge in combining search engines is that BM25 outputs unbounded scores ($[0, \infty)$) while Cosine Similarity outputs normalized scores ($[-1, 1]$). Directly adding these scores causes BM25 to dominate. 
+A key challenge in combining BM25 and Sentence Transformers is that BM25 outputs unbounded positive scores ($[0, \infty)$) while Cosine Similarity outputs normalized scores ($[-1, 1]$). Directly adding these raw scores is mathematically unsound because BM25 would dominate.
 
-Reciprocal Rank Fusion (RRF) overcomes this by relying entirely on the **ordinal rank position** of documents:
+Reciprocal Rank Fusion (RRF) solves this by relying entirely on the \textbf{ordinal rank position} of each document, ignoring raw scores:
 \begin{equation}
-\text{RRF\_Score}(d) = \sum_{m \in \{\text{BM25}, \text{Dense}\}} \frac{1}{60 + \text{Rank}_m(d)}
+\text{RRF\_Score}(d) = \sum_{m \in M} \frac{1}{k + r_m(d)}
 \end{equation}
-where $\text{Rank}_m(d)$ is the 1-based position of document $d$ in ranking list $m$, and $k = 60$ is the standard smoothing constant (Cormack et al., 2009). Documents that rank highly across \textit{both} models receive the highest combined score.
+where:
+\begin{itemize}[leftmargin=1.5em, topsep=2pt]
+    \item $d$ is a candidate document being scored,
+    \item $M = \{\text{BM25}, \text{Dense}\}$ is the set of ranking models being fused,
+    \item $r_m(d)$ is the 1-based rank position of document $d$ in the ranked list produced by model $m$ (e.g., if BM25 ranks a document 3rd, then $r_{\text{BM25}}(d) = 3$),
+    \item $k = 60$ is the standard smoothing constant (Cormack et al., 2009). It dampens the dominance of rank~1 documents from any single model and ensures that documents consistently ranked highly across \textit{both} models receive the highest combined score.
+\end{itemize}
+
+\textbf{Why RRF works so well:} Because $\frac{1}{60 + r}$ is a harmonic decay function, only documents that appear near the top of \textit{both} the BM25 list and the Sentence Transformer list receive a large combined score. A document that ranks 1st in BM25 but 500th in Semantic receives a much lower RRF score than a document ranked 3rd in both.
 
 \subsection{Key Features Beyond Basic Search}
 To enhance practical search utility, the system integrates four specialized features:
 \begin{enumerate}[label=\textbf{\arabic*.}]
-    \item \textbf{Automated WordNet Query Expansion:} The system queries Princeton's WordNet lexicon to automatically identify synonyms for query terms, expanding the search query behind the scenes to address vocabulary mismatch.
-    \item \textbf{Query-Focused Extractive Summarization (Featured Snippets):} When an article is retrieved, the system tokenizes it into sentences and scores each sentence based on its token overlap with the query. The top 1--2 sentences are displayed as an instant answer snippet (100\% factual with zero hallucination).
-    \item \textbf{3D Semantic Map (Explainable AI):} Using Principal Component Analysis (PCA), the 384-dimensional document vectors are compressed into 3D coordinates ($X, Y, Z$) and rendered as an interactive 3D universe in Plotly. This allows users to visually inspect document clusters and query proximity.
-    \item \textbf{Real-Time ML News Categorization:} The system trains a Logistic Regression classifier on the TF-IDF feature space (achieving 96.63\% accuracy). Users can paste breaking news into the interface; the model predicts its category and dynamically indexes it into the search engine in real time.
+    \item \textbf{Automated WordNet Query Expansion:} The system queries Princeton's WordNet lexical database to automatically identify synonyms for each content term in the query. Up to 2 high-confidence synonyms per term are appended to the query string behind the scenes, bridging vocabulary gaps before search evaluation begins.
+    \item \textbf{Query-Focused Extractive Summarization (Featured Snippets):} When an article is retrieved, the system tokenizes it into individual sentences using NLTK's sentence tokenizer. Each sentence is scored based on its stemmed token overlap with the query. The top 1--2 sentences with the highest overlap are extracted and presented as an instant answer snippet (100\% factual with zero hallucination risk, since only exact quotes are displayed).
+    \item \textbf{3D Semantic Map (Explainable AI):} Using \textbf{Principal Component Analysis (PCA)}, the 384-dimensional dense document vectors are compressed into 3D coordinates ($X, Y, Z$). All documents and the user query are plotted in an interactive Plotly scatter plot, allowing users to visually verify that semantically related articles (e.g., all ``business'' articles) cluster together in vector space.
+    \item \textbf{Real-Time ML News Categorization:} The system trains a \textbf{Logistic Regression} classifier on the TF-IDF feature matrix (achieving 96.63\% validation accuracy on an 80/20 train-test split). Users can paste new articles into the interface; the model predicts the article's category and dynamically inserts it into both the lexical inverted index and dense vector store in under 0.5~seconds.
 \end{enumerate}
 
 \newpage
@@ -401,33 +425,46 @@ To enhance practical search utility, the system integrates four specialized feat
 \subsection{Evaluation Metrics}
 We evaluate search performance using four standard Information Retrieval metrics:
 \begin{enumerate}[label=\textbf{\arabic*.}]
-    \item \textbf{Precision@10 (P@10):} The proportion of the top 10 retrieved articles that belong to the relevant topic category:
+    \item \textbf{Precision@10 (P@10):} The proportion of the top 10 retrieved articles that belong to the expected topic category:
     \begin{equation}
     P@10 = \frac{\sum_{i=1}^{10} \text{rel}_i}{10}
     \end{equation}
-    where $\text{rel}_i \in \{0, 1\}$ indicates whether document $i$ is relevant.
+    where $\text{rel}_i \in \{0, 1\}$ is a binary indicator that equals $1$ if the document at rank position $i$ belongs to the expected category, and $0$ otherwise.
 
-    \item \textbf{Recall:} The fraction of all relevant documents in the corpus that were retrieved:
+    \item \textbf{Recall:} The fraction of all relevant documents in the corpus that were successfully retrieved within the top $K$ results:
     \begin{equation}
     \text{Recall} = \frac{\sum_{i=1}^{K} \text{rel}_i}{|R|}
     \end{equation}
-    where $|R|$ is the total number of relevant documents for that category in the entire corpus.
+    where $|R|$ is the total number of relevant documents for that category in the entire corpus. \textit{Note:} For $K=10$ and categories of approximately 400--510 articles, the theoretical maximum possible recall is $10/400 \approx 0.025$ (2.5\%).
 
-    \item \textbf{Mean Average Precision (MAP):} Evaluates the quality of ranking by computing average precision across all retrieved positions, with the denominator bounded by the retrieval window $K$:
+    \item \textbf{Mean Average Precision (MAP):} Evaluates the quality of ranking by computing average precision across all relevant positions. The denominator is bounded by the retrieval window $K$ to avoid artificially low scores:
     \begin{equation}
     \text{AP@K} = \frac{1}{\min(K, |R|)} \sum_{k=1}^{K} P(k) \times \text{rel}_k
     \end{equation}
-    MAP is the mean AP across all evaluation queries: $\text{MAP} = \frac{1}{|Q|} \sum_{q \in Q} \text{AP}(q)$.
+    where:
+    \begin{itemize}[leftmargin=1.5em, topsep=2pt]
+        \item $K$ is the number of documents retrieved (the retrieval window, e.g., 10),
+        \item $|R|$ is the total number of relevant documents in the corpus for the queried category,
+        \item $P(k) = \frac{\text{Number of relevant documents in top } k}{k}$ is the precision computed at rank position $k$,
+        \item $\text{rel}_k \in \{0, 1\}$ is the binary relevance of the document at rank $k$,
+        \item $\min(K, |R|)$ bounds the denominator so that when $K < |R|$, the metric evaluates against the maximum achievable performance within the retrieval window rather than the entire category.
+    \end{itemize}
+    MAP is the mean of AP values across all evaluation queries: $\text{MAP} = \frac{1}{|Q|} \sum_{q \in Q} \text{AP}(q)$.
 
-    \item \textbf{Normalized Discounted Cumulative Gain (nDCG@10):} Measures ranking quality by applying a logarithmic discount to documents that appear lower in the list:
+    \item \textbf{Normalized Discounted Cumulative Gain (nDCG@10):} Measures ranking quality by applying a logarithmic discount to documents placed lower in the ranking, heavily rewarding models that place the most relevant documents at position~1:
     \begin{equation}
     \text{DCG@10} = \sum_{i=1}^{10} \frac{2^{\text{rel}_i} - 1}{\log_2(i + 1)}, \quad \text{nDCG@10} = \frac{\text{DCG@10}}{\text{IDCG@10}}
     \end{equation}
-    where $\text{IDCG@10}$ is the Ideal DCG score achieved by placing all relevant documents at the very top.
+    where:
+    \begin{itemize}[leftmargin=1.5em, topsep=2pt]
+        \item $\text{rel}_i \in \{0, 1\}$ is the relevance of the document at rank position $i$,
+        \item $\log_2(i + 1)$ is the logarithmic discount factor that penalizes relevant documents placed at lower positions,
+        \item $\text{IDCG@10}$ (Ideal DCG) is the maximum possible DCG score, obtained by sorting all relevant documents at the top (i.e., a hypothetical perfect ranking).
+    \end{itemize}
 \end{enumerate}
 
 \subsection{Performance Comparison}
-Table~\ref{tab:results} summarizes the experimental results across all four retrieval models on the curated BBC News evaluation benchmark.
+Table~\ref{tab:results} summarizes the experimental results across all four retrieval models on the BBC News evaluation benchmark.
 
 \begin{table}[H]
 \centering
@@ -465,10 +502,13 @@ Sentence Transformer (Dense) & 0.880 & 0.024 & 0.795 & 0.884 \\ \hline
 
 \subsection{Discussion of Findings}
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Why BM25 Outperforms TF-IDF:} Okapi BM25 improves Precision@10 from 0.420 to 0.610 (+45.2\%) and MAP from 0.384 to 0.530 (+38.0\%). This gain is driven by BM25's term saturation factor, which prevents documents that repeat keywords from dominating, and document length normalization, which prevents bias toward longer articles.
-    \item \textbf{Why Sentence Transformers Outperform Lexical Models:} Sentence Transformers achieve a MAP of 0.795 and an nDCG@10 of 0.884. By mapping queries and articles into continuous vector space, the neural model recognizes conceptual synonyms (e.g., matching \textit{``economic downturn''} with \textit{``recession''}) that keyword models miss.
-    \item \textbf{Why Hybrid RRF Wins:} The Hybrid RRF model achieves the highest overall scores across every metric, reaching **0.940 Precision@10**, **0.912 MAP**, and **0.965 nDCG@10**. By combining the exact-keyword precision of BM25 with the conceptual understanding of Sentence Transformers, RRF ensures that documents supported by both models are prioritized at the top.
-    \item \textbf{Note on Recall Values:} While Precision, MAP, and nDCG are high, Recall appears numerically modest ($\approx 0.025$). This is mathematically expected: because each category contains $\approx 400$ relevant articles, retrieving only $K=10$ documents imposes a theoretical recall ceiling of $10 / 400 = 0.025$.
+    \item \textbf{Why BM25 Outperforms TF-IDF:} Okapi BM25 improves Precision@10 from 0.420 to 0.610 (+45.2\%) and MAP from 0.384 to 0.530 (+38.0\%). This gain is driven by two factors: (i) BM25's term saturation parameter ($k_1 = 1.5$) prevents documents that repeat keywords from disproportionately dominating, and (ii) the length normalization parameter ($b = 0.75$) penalizes longer articles so they do not automatically outrank shorter, more focused articles.
+
+    \item \textbf{Why Sentence Transformers Outperform BM25:} Sentence Transformers achieve a MAP of 0.795 and an nDCG@10 of 0.884. By encoding queries and documents into continuous 384-dimensional vector space, the model recognizes conceptual synonyms (e.g., matching \textit{``economic downturn''} with \textit{``recession''}) that keyword-based models fundamentally cannot detect.
+
+    \item \textbf{Why Hybrid RRF Achieves the Highest Scores:} The Hybrid RRF model achieves the best performance across every metric: \textbf{0.940 Precision@10}, \textbf{0.912 MAP}, and \textbf{0.965 nDCG@10}. By fusing both BM25 and Semantic rankings through ordinal rank positions, RRF ensures that documents supported by both exact keyword evidence and semantic meaning consensus are placed at the very top of the final ranking.
+
+    \item \textbf{Note on Recall Values:} While Precision, MAP, and nDCG are exceptionally high, Recall values appear numerically modest ($\approx 0.025$). This is mathematically expected: because each category contains approximately 400--510 relevant articles, retrieving only $K=10$ documents imposes a theoretical recall ceiling of $10 / 400 = 0.025$ (2.5\%). This is not a system limitation---it reflects the inherent constraint of evaluating at a small retrieval depth $K$.
 \end{itemize}
 
 \newpage
@@ -478,21 +518,22 @@ Sentence Transformer (Dense) & 0.880 & 0.024 & 0.795 & 0.884 \\ \hline
 % ==============================================================================
 \section{Conclusion}
 
-In this project, we designed, implemented, and evaluated an advanced \textbf{Hybrid Information Retrieval System} for the BBC News Archive. 
+In this project, we designed, implemented, and evaluated an advanced \textbf{Hybrid Information Retrieval System} for the BBC News Archive.
 
 The experimental results validate that:
 \begin{enumerate}[leftmargin=1.5em]
-    \item Purely lexical search (TF-IDF and BM25) is fast but limited by the vocabulary mismatch problem.
-    \item Purely semantic search (Sentence Transformers) understands context and intent but can occasionally overlook exact keyword constraints.
-    \item \textbf{Reciprocal Rank Fusion (RRF)} provides the optimal combination, achieving an exceptional **0.965 nDCG@10** and **0.912 MAP**, outperforming all standalone search baselines.
+    \item Purely lexical search (TF-IDF and BM25) is computationally efficient but fundamentally limited by the vocabulary mismatch problem---it cannot match documents that express the same concept using different words.
+    \item Purely semantic search (Sentence Transformers) understands context, intent, and synonyms, but can occasionally overlook exact named entities or rare technical keywords.
+    \item \textbf{Reciprocal Rank Fusion (RRF)} provides the optimal synthesis, achieving an exceptional \textbf{0.965 nDCG@10} and \textbf{0.912 MAP}, decisively outperforming all standalone search baselines.
 \end{enumerate}
 
-Furthermore, the integration of automated WordNet query expansion, query-focused extractive snippets, 3D semantic mapping, and real-time news categorization creates an accurate, explainable, and production-ready search engine.
+Furthermore, the integration of automated WordNet query expansion, query-focused extractive snippets, 3D semantic mapping, and real-time news categorization (Logistic Regression at 96.63\% accuracy) creates an accurate, explainable, and practical search engine.
 
 \subsection{Limitations and Future Scope}
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Compute Overhead:} Generating dense transformer embeddings on CPU requires noticeable time during initialization. In a production deployment with millions of documents, specialized Approximate Nearest Neighbor (ANN) vector databases (such as Faiss, Milvus, or Pinecone) would be used.
-    \item \textbf{Extractive vs. Generative Answers:} Our snippet generator is strictly extractive to eliminate AI hallucinations. Future work could integrate lightweight generative re-rankers (such as MonoT5) to synthesize answers across multiple paragraphs.
+    \item \textbf{Compute Overhead:} Generating dense transformer embeddings on CPU requires noticeable initialization time. In a production deployment with millions of documents, specialized Approximate Nearest Neighbor (ANN) vector databases (such as Faiss, Milvus, or Pinecone) would be necessary for sub-millisecond vector search.
+    \item \textbf{Extractive vs. Generative Answers:} Our snippet generator is strictly extractive---it quotes exact sentences from articles to eliminate AI hallucinations. Future work could integrate lightweight generative cross-encoder re-rankers (such as MonoT5 or ColBERT) to synthesize concise multi-sentence answers when relevant information is spread across different paragraphs.
+    \item \textbf{Proxy Relevance Labels:} Our evaluation uses category-based proxy relevance judgments (a document is deemed relevant if it belongs to the expected category). For more fine-grained evaluation, manually annotated relevance labels at the query-document pair level could be incorporated.
 \end{itemize}
 
 \newpage
@@ -524,7 +565,7 @@ Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. \textit{
 Miller, G. A. (1995). WordNet: A Lexical Database for English. \textit{Communications of the ACM}, 38(11), 39--41.
 
 \bibitem{manning2008}
-Manning, C. D., Raghavan, P., \& Schütze, H. (2008). \textit{Introduction to Information Retrieval}. Cambridge University Press.
+Manning, C. D., Raghavan, P., \& Sch\"{u}tze, H. (2008). \textit{Introduction to Information Retrieval}. Cambridge University Press.
 
 \end{thebibliography}
 \endgroup
