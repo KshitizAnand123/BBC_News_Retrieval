@@ -270,58 +270,64 @@ Figure~\ref{fig:pipeline_arch} illustrates the complete end-to-end flowchart of 
 \begin{tikzpicture}[
     scale=0.92, transform shape,
     font=\rmfamily\small,
-    mainbox/.style={draw=black, fill=gray!8, rounded corners=3pt, thick, align=center, inner sep=6pt},
-    branchbox/.style={draw=black, fill=white, rounded corners=3pt, thick, align=center, inner sep=6pt, text width=5.2cm},
-    fusionbox/.style={draw=black, fill=gray!15, rounded corners=4pt, very thick, align=center, inner sep=7pt, text width=10.2cm},
+    mainbox/.style={draw=black, fill=gray!8, rounded corners=3pt, thick, align=center, inner sep=7pt},
+    branchbox/.style={draw=black, fill=white, rounded corners=3pt, thick, align=center, inner sep=6pt, minimum height=2.4cm},
+    fusionbox/.style={draw=black, fill=gray!15, rounded corners=4pt, very thick, align=center, inner sep=7pt},
     arr/.style={->, >=stealth, thick, draw=black}
 ]
-\node[mainbox, text width=9.2cm] (q) at (0, 0) {
-    \textbf{Step 1: User Search Query}\\
-    \small Natural language input (e.g., \textit{``stock market shares economy''})
+
+% Step 1: User Search Query
+\node[mainbox, text width=11.2cm] (q) {
+    \textbf{Step 1: User Search Query}\\[2pt]
+    \footnotesize Natural language input (e.g., \textit{``stock market shares economy''})
 };
 
-\node[mainbox, text width=9.2cm] (prep) at (0, -1.3) {
-    \textbf{Step 2: Query Processing \& WordNet Expansion}\\
-    \small Tokenization $\cdot$ Lowercasing $\cdot$ Stop-word Removal $\cdot$ Synonym Expansion
+% Step 2: Query Processing
+\node[mainbox, text width=11.2cm, below=0.45cm of q] (prep) {
+    \textbf{Step 2: Query Processing \& WordNet Expansion}\\[2pt]
+    \footnotesize Tokenization $\cdot$ Lowercasing $\cdot$ Stop-word Removal $\cdot$ WordNet Synonym Expansion
 };
 
-\node[branchbox] (bm25) at (-3.1, -3.3) {
+% Parallel Branches
+\node[branchbox, text width=5.15cm, below=0.55cm of prep.south west, anchor=north west] (bm25) {
     \textbf{Branch A: Sparse Keyword Search}\\
-    \textbf{(Okapi BM25)}\\
-    \vspace{2pt}
-    \footnotesize Porter Stemming $\cdot$ Inverted Index\\
-    Exact keyword matching\\
+    \textbf{(Okapi BM25)}\\[3pt]
+    \scriptsize Porter Stemming $\cdot$ Inverted Index\\
+    Exact keyword frequency matching\\
     $\Downarrow$\\
-    \textbf{Ranked Keyword Candidate List}
+    \textbf{Ranked Lexical Candidate List}
 };
 
-\node[branchbox] (dense) at (3.1, -3.3) {
+\node[branchbox, text width=5.15cm, below=0.55cm of prep.south east, anchor=north east] (dense) {
     \textbf{Branch B: Dense Semantic Search}\\
-    \textbf{(Sentence Transformers)}\\
-    \vspace{2pt}
-    \footnotesize Raw sentences $\cdot$ 384-dim vectors\\
+    \textbf{(Sentence Transformers)}\\[3pt]
+    \scriptsize Raw sentences $\cdot$ 384-dim vectors\\
     Cosine similarity scoring\\
     $\Downarrow$\\
     \textbf{Ranked Semantic Candidate List}
 };
 
-\node[fusionbox] (rrf) at (0, -5.6) {
-    \textbf{Step 3: Reciprocal Rank Fusion (RRF) Aggregator}\\
-    \small $\text{Score}(d) = \sum_{m \in \{\text{BM25}, \text{Dense}\}} \frac{1}{60 + \text{Rank}_m(d)}$\\
+% Step 3: RRF Fusion
+\node[fusionbox, text width=11.2cm, below=0.55cm of bm25.south west, anchor=north west] (rrf) {
+    \textbf{Step 3: Reciprocal Rank Fusion (RRF) Aggregator}\\[2pt]
+    \small $\text{Score}(d) = \sum_{m \in \{\text{BM25}, \text{Dense}\}} \frac{1}{60 + \text{Rank}_m(d)}$\\[2pt]
     \footnotesize Fuses ordinal rank positions from both models; eliminates score-scale distortion
 };
 
-\node[mainbox, text width=10.2cm] (out) at (0, -7.2) {
-    \textbf{Step 4: Final Search Results \& Answer Presentation}\\
-    \small Top-$K$ Ranked Articles $\cdot$ Featured Answer Snippets $\cdot$ 3D Semantic Map
+% Step 4: Final Presentation
+\node[mainbox, text width=11.2cm, below=0.45cm of rrf.south, anchor=north] (out) {
+    \textbf{Step 4: Final Search Results \& Answer Presentation}\\[2pt]
+    \footnotesize Top-$K$ Ranked Articles $\quad\cdot\quad$ Featured Answer Snippets $\quad\cdot\quad$ 3D Semantic Map
 };
 
+% Connections: Straight, symmetrical vertical arrows
 \draw[arr] (q) -- (prep);
-\draw[arr] (prep.south) -- ++(0,-0.3) -| (bm25.north);
-\draw[arr] (prep.south) -- ++(0,-0.3) -| (dense.north);
-\draw[arr] (bm25.south) |- (rrf.west);
-\draw[arr] (dense.south) |- (rrf.east);
+\draw[arr] (prep.south -| bm25.north) -- (bm25.north);
+\draw[arr] (prep.south -| dense.north) -- (dense.north);
+\draw[arr] (bm25.south) -- (rrf.north -| bm25.south);
+\draw[arr] (dense.south) -- (rrf.north -| dense.south);
 \draw[arr] (rrf) -- (out);
+
 \end{tikzpicture}%
 }
 \caption{Architectural Flowchart of the Hybrid Search Pipeline}
